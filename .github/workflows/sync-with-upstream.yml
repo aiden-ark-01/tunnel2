@@ -1,0 +1,36 @@
+name: 'Sync fork with upstream (edgetunnel)'
+
+on:
+  schedule:
+    # 每天 UTC 00:00 自动运行一次
+    - cron: '0 0 * * *'
+  # 支持在 GitHub 页面手动点击运行
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    name: Sync latest commits from cmliu/edgetunnel
+
+    steps:
+      # 必要步骤：checkout 目标仓库
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      # 必要步骤：从上游拉取并同步
+      - name: Sync upstream changes
+        id: sync
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.3
+        with:
+          target_sync_branch: main
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+          upstream_sync_branch: main
+          upstream_sync_repo: cmliu/edgetunnel
+
+      - name: Show result
+        run: echo "has_new_commits = ${{ steps.sync.outputs.has_new_commits }}"
