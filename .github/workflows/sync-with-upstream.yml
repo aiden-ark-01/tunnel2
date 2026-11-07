@@ -16,21 +16,18 @@ jobs:
     name: Sync latest commits from cmliu/edgetunnel
 
     steps:
-      # 必要步骤：checkout 目标仓库
-      - name: Checkout target repo
+      # 拉取完整历史（fetch-depth: 0），避免浅克隆导致 "refusing to merge unrelated histories"
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
 
-      # 必要步骤：从上游拉取并同步
-      - name: Sync upstream changes
-        id: sync
-        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.3
-        with:
-          target_sync_branch: main
-          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
-          upstream_sync_branch: main
-          upstream_sync_repo: cmliu/edgetunnel
-
-      - name: Show result
-        run: echo "has_new_commits = ${{ steps.sync.outputs.has_new_commits }}"
+      - name: Sync from upstream
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/cmliu/edgetunnel.git
+          git fetch upstream main
+          git merge upstream/main -m "Sync with upstream cmliu/edgetunnel"
+          git push origin main
