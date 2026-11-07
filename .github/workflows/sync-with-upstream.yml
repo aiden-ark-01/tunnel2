@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: write
-  workflows: write
 
 jobs:
   sync:
@@ -30,5 +29,21 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote add upstream https://github.com/cmliu/edgetunnel.git
           git fetch upstream main
-          git merge upstream/main -m "Sync with upstream cmliu/edgetunnel"
+
+          # 上游已完全包含在本地历史中则无需同步
+          if git merge-base --is-ancestor upstream/main HEAD; then
+            echo "Already up to date with upstream. Nothing to do."
+            exit 0
+          fi
+
+          # 合并上游 main；冲突时以本仓库为准（-X ours）
+          git merge --no-ff -X ours -m "Sync with upstream cmliu/edgetunnel" upstream/main
+
+          # 保留本仓库自己的 .github/workflows（上游自带的 workflow 不同步进来，
+          # 因为 GITHUB_TOKEN 没有推送 workflow 文件改动的权限）
+          git rm -r -q --cached .github/workflows 2>/dev/null || true
+          git checkout HEAD^1 -- .github/workflows
+          git add .github/workflows
+          git commit --amend --no-edit
+
           git push origin main
